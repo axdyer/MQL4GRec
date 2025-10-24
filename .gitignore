@@ -7,5 +7,10 @@ pretrain_ckpt/*
 result/*
 log
 ./log
-
-
+data_process/datasets/
+data_process/preprocess/
+.ipynb_checkpoints/
+data.zip
+data/
+*.lock
+cache_models

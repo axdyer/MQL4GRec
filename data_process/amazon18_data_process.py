@@ -174,16 +174,16 @@ def preprocess_rating(args):
     print('Process rating data: ')
     print(' Dataset: ', args.dataset)
     
-    images_info_file = os.path.join(args.input_path, 'Images', f'{args.dataset}_images_info.json')
+    images_info_file = os.path.join(args.input_path, f'{args.dataset}_images_info.json')
     images_info = load_json(images_info_file)
 
 
     # load ratings
-    rating_file_path = os.path.join(args.input_path, 'Ratings', dataset_full_name + '.csv')
+    rating_file_path = os.path.join(args.input_path, dataset_full_name + '.csv')
     rating_users, rating_items, rating_inters = load_ratings(rating_file_path, images_info)
 
     # load item IDs with meta data
-    meta_file_path = os.path.join(args.input_path, 'Metadata', f'meta_{dataset_full_name}.json.gz')
+    meta_file_path = os.path.join(args.input_path, f'meta_{dataset_full_name}.json.gz')
     meta_items = load_meta_items(meta_file_path)
 
     # 1. Filter items w/o meta data;
@@ -238,7 +238,7 @@ def convert_to_atomic_files(args, train_data, valid_data, test_data):
     uid_list = list(train_data.keys())
     uid_list.sort(key=lambda t: int(t))
 
-    with open(os.path.join(args.output_path, args.dataset, f'{args.dataset}.train.inter'), 'w') as file:
+    with open(os.path.join(args.output_path, f'{args.dataset}.train.inter'), 'w') as file:
         file.write('user_id:token\titem_id_list:token_seq\titem_id:token\n')
         for uid in uid_list:
             item_seq = train_data[uid]
@@ -248,14 +248,14 @@ def convert_to_atomic_files(args, train_data, valid_data, test_data):
                 seq = item_seq[:-target_idx][-50:]
                 file.write(f'{uid}\t{" ".join(seq)}\t{target_item}\n')
 
-    with open(os.path.join(args.output_path, args.dataset, f'{args.dataset}.valid.inter'), 'w') as file:
+    with open(os.path.join(args.output_path, f'{args.dataset}.valid.inter'), 'w') as file:
         file.write('user_id:token\titem_id_list:token_seq\titem_id:token\n')
         for uid in uid_list:
             item_seq = train_data[uid][-50:]
             target_item = valid_data[uid][0]
             file.write(f'{uid}\t{" ".join(item_seq)}\t{target_item}\n')
 
-    with open(os.path.join(args.output_path, args.dataset, f'{args.dataset}.test.inter'), 'w') as file:
+    with open(os.path.join(args.output_path, f'{args.dataset}.test.inter'), 'w') as file:
         file.write('user_id:token\titem_id_list:token_seq\titem_id:token\n')
         for uid in uid_list:
             item_seq = (train_data[uid] + valid_data[uid])[-50:]
@@ -267,8 +267,8 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='Instruments', help='Instruments / Arts / Games')
     parser.add_argument('--user_k', type=int, default=5, help='user k-core filtering')
     parser.add_argument('--item_k', type=int, default=5, help='item k-core filtering')
-    parser.add_argument('--input_path', type=str, default='/datasets/datasets/amazon18')
-    parser.add_argument('--output_path', type=str, default='/datasets/datasets/LC-Rec_image')
+    parser.add_argument('--input_path', type=str, default=f'./datasets/amazon18/{parser.parse_args().dataset}/')
+    parser.add_argument('--output_path', type=str, default=f'./datasets/MQL4GRec/{parser.parse_args().dataset}/')
     return parser.parse_args()
 
 
@@ -280,38 +280,32 @@ if __name__ == '__main__':
     # amazon18_dataset_list = ['Cell', 'Food', 'Movies', 'Pet']
     # amazon18_dataset_list = ['Scientific', 'Pantry', 'Office']
     # amazon18_dataset_list = ['Automotive', 'CDs', 'Electronics', 'Sports', 'Tools', 'Toys']
-    amazon18_dataset_list = ['Home']
-    for dataset in amazon18_dataset_list:
-        
-        print('\n' + '=' * 20 + '\n')
-        if dataset == 'Fashion':
-            continue
-        args.dataset = dataset
-        
-        # load interactions from raw rating file
-        rating_inters, meta_items = preprocess_rating(args)
 
-        
-        # split train/valid/temp
-        all_inters, train_inters, valid_inters, test_inters, user2index, item2index = generate_data(args, rating_inters)
+    
+    # load interactions from raw rating file
+    rating_inters, meta_items = preprocess_rating(args)
 
-        check_path(os.path.join(args.output_path, args.dataset))
+    
+    # split train/valid/temp
+    all_inters, train_inters, valid_inters, test_inters, user2index, item2index = generate_data(args, rating_inters)
 
-        write_json_file(all_inters, os.path.join(args.output_path, args.dataset, f'{args.dataset}.inter.json'))
-        convert_to_atomic_files(args, train_inters, valid_inters, test_inters)
+    check_path(os.path.join(args.output_path, args.dataset))
 
-        item2feature = collections.defaultdict(dict)
-        for item, item_id in item2index.items():
-            item2feature[item_id] = meta_items[item]
+    write_json_file(all_inters, os.path.join(args.output_path, f'{args.dataset}.inter.json'))
+    convert_to_atomic_files(args, train_inters, valid_inters, test_inters)
 
-        # reviews = load_review_data(args, user2index, item2index)
+    item2feature = collections.defaultdict(dict)
+    for item, item_id in item2index.items():
+        item2feature[item_id] = meta_items[item]
 
-        print("user:",len(user2index))
-        print("item:",len(item2index))
+    # reviews = load_review_data(args, user2index, item2index)
 
-        write_json_file(item2feature, os.path.join(args.output_path, args.dataset, f'{args.dataset}.item.json'))
-        # write_json_file(reviews, os.path.join(args.output_path, args.dataset, f'{args.dataset}.review.json'))
+    print("user:",len(user2index))
+    print("item:",len(item2index))
+
+    write_json_file(item2feature, os.path.join(args.output_path, f'{args.dataset}.item.json'))
+    # write_json_file(reviews, os.path.join(args.output_path, args.dataset, f'{args.dataset}.review.json'))
 
 
-        write_remap_index(user2index, os.path.join(args.output_path, args.dataset, f'{args.dataset}.user2id'))
-        write_remap_index(item2index, os.path.join(args.output_path, args.dataset, f'{args.dataset}.item2id'))
+    write_remap_index(user2index, os.path.join(args.output_path, f'{args.dataset}.user2id'))
+    write_remap_index(item2index, os.path.join(args.output_path, f'{args.dataset}.item2id'))

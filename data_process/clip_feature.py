@@ -29,7 +29,7 @@ def get_id2item_dict(item2id_file):
 def get_feature(args):
     print(args.dataset, args.backbone)
 
-    image_file_path = f'{args.image_root}/{args.dataset}'
+    image_file_path = f'{args.image_root}/{args.dataset}/'
     save_path = f'{args.save_root}/{args.dataset}'
     
     item2id_file = os.path.join(save_path, f'{args.dataset}.item2id')
@@ -37,7 +37,9 @@ def get_feature(args):
     
     # print(id2item[str(0)])
     
-    images_info = load_json(os.path.join(args.image_root, f'{args.dataset}_images_info.json'))
+    
+    images_info = load_json(os.path.join(image_file_path, f'{args.dataset}_images_info.json'))
+    print(images_info)
     
     # os.makedirs(save_path, exist_ok=True)
 
@@ -57,13 +59,15 @@ def get_feature(args):
             try:
                 image = Image.open(image_file)
                 image = preprocess(image).unsqueeze(0).to(device)
+                
+                image_features = model.encode_image(image)
+                image_feature = image_features[0].cpu()
+                
             except Exception as e:
-                print("Error type:", type(e))
-                print(e)
-                print(image_file)
-
-            image_features = model.encode_image(image)
-            image_feature = image_features[0].cpu()
+                print(f"\nError processing image {i} ({image_file}):")
+                print(f"Error type: {type(e).__name__}: {e}")
+                # 使用零向量作为缺失图片的embedding
+                image_feature = torch.zeros(model.visual.output_dim)
             
             embeddings.append(image_feature)
             
@@ -81,11 +85,11 @@ def get_feature(args):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='Instruments', help='Instruments / Arts / Games')
-    parser.add_argument('--image_root', type=str, default="/userhome/dataset/amazon18/Images")
-    parser.add_argument('--save_root', type=str, default="/userhome/dataset/MQL4GRec")
+    parser.add_argument('--image_root', type=str, default="./datasets/amazon18/")
+    parser.add_argument('--save_root', type=str, default="./datasets/MQL4GRec")
     parser.add_argument('--gpu_id', type=int, default=0, help='ID of running GPU')
     parser.add_argument('--backbone', type=str, default='ViT-L/14')
-    parser.add_argument('--model_cache_dir', type=str, default='/userhome/cache_models/clip')
+    parser.add_argument('--model_cache_dir', type=str, default='./cache_models/clip')
     return parser.parse_args()
     
 if __name__ == "__main__":

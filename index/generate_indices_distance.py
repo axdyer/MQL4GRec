@@ -25,6 +25,10 @@ def parse_args():
     parser.add_argument('--output_file', type=str, default=None)
     parser.add_argument('--content', type=str, default=None)
     parser.add_argument('--device', type=str, default="cuda:0")
+    parser.add_argument("--data_path", type=str,
+                        default="/datasets/datasets/LC-Rec_all/",
+                        help="Input data path.")
+    parser.add_argument('--embedding_file', type=str, default=".emb-llama-td.npy", help='')
 
     return parser.parse_args()
 
@@ -61,6 +65,7 @@ ckpt_path = args.ckpt_path
 output_dir = args.output_dir
 output_file = args.output_file
 output_file = os.path.join(output_dir, output_file)
+data_path = f'{args.data_path}{args.dataset}/{args.dataset}{args.embedding_file}'
 device = torch.device(args.device)
 
 if args.content == 'image':
@@ -68,24 +73,24 @@ if args.content == 'image':
 else:
     prefix = ["<a_{}>","<b_{}>","<c_{}>","<d_{}>","<e_{}>"]
 
-ckpt = torch.load(ckpt_path, map_location=torch.device('cpu'))
-args = ckpt["args"]
+ckpt = torch.load(ckpt_path, map_location=torch.device('cpu'), weights_only=False)
+ckpt_args = ckpt["args"]
 state_dict = ckpt["state_dict"]
 
-data = EmbDataset(args.data_path)
+data = EmbDataset(data_path)
 
 model = RQVAE(in_dim=data.dim,
-                  num_emb_list=args.num_emb_list,
-                  e_dim=args.e_dim,
-                  layers=args.layers,
-                  dropout_prob=args.dropout_prob,
-                  bn=args.bn,
-                  loss_type=args.loss_type,
-                  quant_loss_weight=args.quant_loss_weight,
-                  kmeans_init=args.kmeans_init,
-                  kmeans_iters=args.kmeans_iters,
-                  sk_epsilons=args.sk_epsilons,
-                  sk_iters=args.sk_iters,
+                  num_emb_list=ckpt_args.num_emb_list,
+                  e_dim=ckpt_args.e_dim,
+                  layers=ckpt_args.layers,
+                  dropout_prob=ckpt_args.dropout_prob,
+                  bn=ckpt_args.bn,
+                  loss_type=ckpt_args.loss_type,
+                  quant_loss_weight=ckpt_args.quant_loss_weight,
+                  kmeans_init=ckpt_args.kmeans_init,
+                  kmeans_iters=ckpt_args.kmeans_iters,
+                  sk_epsilons=ckpt_args.sk_epsilons,
+                  sk_iters=ckpt_args.sk_iters,
                   )
 
 model.load_state_dict(state_dict)
@@ -93,7 +98,7 @@ model = model.to(device)
 model.eval()
 print(model)
 
-data_loader = DataLoader(data,num_workers=args.num_workers,
+data_loader = DataLoader(data,num_workers=ckpt_args.num_workers,
                              batch_size=64, shuffle=False,
                              pin_memory=True)
 
@@ -152,8 +157,8 @@ print('collision items num: ', len(all_collision_items))
 # new_indices_set = set()
 
 tt = 0
-level = len(args.num_emb_list) - 1
-max_num = args.num_emb_list[0]
+level = len(ckpt_args.num_emb_list) - 1
+max_num = ckpt_args.num_emb_list[0]
 
 while True:
     tot_item = len(all_indices_str)

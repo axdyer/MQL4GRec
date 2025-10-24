@@ -85,7 +85,9 @@ def generate_item_embedding(args, item_text_list, tokenizer, model, word_drop_ra
                         new_sentences.append(new_sent)
                     sentences = new_sentences
                 encoded_sentences = tokenizer(sentences, max_length=args.max_sent_len,
-                                              truncation=True, return_tensors='pt',padding="longest").to(args.device)
+                                              truncation=True, return_tensors='pt',padding="longest")
+                # 当模型使用device_map时，输入会自动路由到正确的设备
+                # 不需要手动.to(device)
                 outputs = model(input_ids=encoded_sentences.input_ids,
                                 attention_mask=encoded_sentences.attention_mask)
     
@@ -108,11 +110,11 @@ def generate_item_embedding(args, item_text_list, tokenizer, model, word_drop_ra
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='Instruments', help='Instruments / Arts / Games')
-    parser.add_argument('--root', type=str, default="/userhome/dataset/MQL4GRec")
+    parser.add_argument('--root', type=str, default="./datasets/MQL4GRec")
     parser.add_argument('--gpu_id', type=int, default=0, help='ID of running GPU')
     parser.add_argument('--plm_name', type=str, default='llama')
     parser.add_argument('--model_name_or_path', type=str, default='huggyllama/llama-7b')
-    parser.add_argument('--model_cache_dir', type=str, default='/userhome/cache_models')
+    parser.add_argument('--model_cache_dir', type=str, default='./cache_models')
     parser.add_argument('--max_sent_len', type=int, default=2048)
     parser.add_argument('--word_drop_ratio', type=float, default=-1, help='word drop ratio, do not drop by default')
     return parser.parse_args()
@@ -128,12 +130,15 @@ if __name__ == '__main__':
 
     item_text_list = preprocess_text(args)
 
-    kwargs = {"cache_dir": args.model_cache_dir, "local_files_only": os.path.exists(args.model_cache_dir)}
+    kwargs = {"cache_dir": args.model_cache_dir}
     
     plm_tokenizer, plm_model = load_plm(args.model_name_or_path, kwargs)
     if plm_tokenizer.pad_token_id is None:
         plm_tokenizer.pad_token_id = 0
-    plm_model = plm_model.to(device)
+    
+    # 注意：当使用device_map="auto"时，模型已经自动分配到多个GPU
+    # 不需要再调用.to(device)，否则会导致错误
+    print(f"Model is distributed across devices, not moving to single device")
 
     generate_item_embedding(args, item_text_list,plm_tokenizer,
                             plm_model, word_drop_ratio=args.word_drop_ratio)

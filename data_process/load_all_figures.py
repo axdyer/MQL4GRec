@@ -125,7 +125,7 @@ def main(args, meta_items):
     dataset = args.dataset
     save_path = f'{args.save_path}/{dataset}'
 
-    item_images_file = f'{args.save_path}/{dataset}_images_info.json'
+    item_images_file = f'{args.save_path}/../{dataset}_images_info.json'
     os.makedirs(save_path, exist_ok=True)
 
     if os.path.exists(item_images_file):
@@ -178,10 +178,10 @@ def main(args, meta_items):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='Arts', help='Instruments / Arts / Games')
-    parser.add_argument('--meta_data_path', type=str, default='/datasets/datasets/amazon18/Metadata')
-    parser.add_argument('--rating_data_path', type=str, default='/datasets/datasets/amazon18/Ratings')
-    parser.add_argument('--review_data_path', type=str, default='/datasets/datasets/amazon18/Review')
-    parser.add_argument('--save_path', type=str, default='/datasets/datasets/amazon18/Images')
+    parser.add_argument('--meta_data_path', type=str, default=f'./datasets/amazon18/{parser.parse_args().dataset}')
+    parser.add_argument('--rating_data_path', type=str, default=f'./datasets/amazon18/{parser.parse_args().dataset}')
+    parser.add_argument('--review_data_path', type=str, default=f'./datasets/amazon18/{parser.parse_args().dataset}')
+    parser.add_argument('--save_path', type=str, default=f'./datasets/amazon18/{parser.parse_args().dataset}/Images')
     return parser.parse_args()
 
 if __name__ == "__main__":
