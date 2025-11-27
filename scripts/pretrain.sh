@@ -19,7 +19,7 @@ OUTPUT_DIR=./log/$Datasets/${Base_model}_b${Per_device_batch_size}_lr${Learning_
 mkdir -p $OUTPUT_DIR
 log_file=$OUTPUT_DIR/pretrain.log
 
-torchrun --nproc_per_node=3 --master_port=2310 pretrain.py \
+torchrun --nproc_per_node=1 --master_port=2310 pretrain.py \
     --data_path ./data/ \
     --pretrain_datasets $Datasets \
     --output_dir $OUTPUT_DIR \

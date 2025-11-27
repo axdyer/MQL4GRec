@@ -7,9 +7,8 @@ import time
 
 import torch
 # import gensim
-from transformers import AutoModel, AutoTokenizer, LlamaTokenizer
+from transformers import AutoModel, AutoTokenizer
 import collections
-from modelscope import snapshot_download
 # import openai
 
 
@@ -81,41 +80,12 @@ def set_device(gpu_id):
             'cuda:' + str(gpu_id) if torch.cuda.is_available() else 'cpu')
 
 def load_plm(model_path='bert-base-uncased', kwargs=None):
-    if kwargs is None:
-        kwargs = {}
-    
-    modelscope_model_mapping = {
-        'huggyllama/llama-7b': 'skyline2006/llama-7b',
-        'bert-base-uncased': 'AI-ModelScope/bert-base-uncased',
-    }
-    
-    modelscope_model_id = modelscope_model_mapping.get(model_path, model_path)
-    
 
-    print(f"Downloading model from ModelScope (魔搭社区): {modelscope_model_id}")
-    
-    model_dir = snapshot_download(modelscope_model_id, cache_dir=kwargs.get('cache_dir', None))
-    
-    print(f"Load Tokenizer from: {model_dir}")
-    # 对于Llama模型，直接使用LlamaTokenizer
-    if 'llama' in model_path.lower():
-        tokenizer = LlamaTokenizer.from_pretrained(model_dir)
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(model_dir)
-    
-    print(f"Load Model from: {model_dir}")
-    # 使用device_map="auto"自动将模型分布到多个GPU上
-    # 这会自动检测可用的GPU并平均分配模型层
-    model = AutoModel.from_pretrained(
-        model_dir, 
-        device_map="auto",  # 自动分配到多个GPU
-        low_cpu_mem_usage=True,
-        trust_remote_code=True,
-        torch_dtype=torch.float16  # 使用FP16减少显存占用
-    )
-    
-    print(f"Model device map: {model.hf_device_map if hasattr(model, 'hf_device_map') else 'single device'}")
-    
+    tokenizer = AutoTokenizer.from_pretrained(model_path, **kwargs)
+
+    print("Load Model:", model_path)
+
+    model = AutoModel.from_pretrained(model_path, low_cpu_mem_usage=True, **kwargs)
     return tokenizer, model
 
 def load_json(file):
@@ -267,5 +237,4 @@ amazon_text_feature3 = ['description']
 amazon_text_feature4 = ['description', 'main_cat', 'category', 'brand']
 
 amazon_text_feature5 = ['title', 'description']
-
 

@@ -19,7 +19,7 @@ OUTPUT_DIR=./log/$Datasets
 mkdir -p $OUTPUT_DIR
 log_file=$OUTPUT_DIR/train.log
 
-torchrun --nproc_per_node=2 --master_port=2312 finetune.py \
+torchrun --nproc_per_node=1 --master_port=2312 finetune.py \
     --data_path ./data/ \
     --dataset $Datasets \
     --output_dir $OUTPUT_DIR \
